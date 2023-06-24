@@ -1,11 +1,8 @@
 import numpy as np
-import pandas as pd
 from scipy.spatial.distance import cdist
-import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator
 from sklearn.metrics import silhouette_score
-from sklearn.model_selection import ParameterSampler
-
+from tqdm.notebook import tqdm
 
 class SparseJumpModel(BaseEstimator):
     """
@@ -80,9 +77,9 @@ class SparseJumpModel(BaseEstimator):
             if len(np.unique(initial_states)) == n_states:
                 s = initial_states.copy()
             else:
-                s = init_states(Y, n_states)
+                s = self.init_states(Y, n_states)
         else:
-            s = init_states(Y, n_states)
+            s = self.init_states(Y, n_states)
 
         n_obs, n_features = Y.shape
         Gamma = jump_penalty * (1 - np.eye(n_states)) 
@@ -122,7 +119,7 @@ class SparseJumpModel(BaseEstimator):
             if (best_s is None) or (loss_old < best_loss):
                 best_loss = loss_old
                 best_s = s.copy()
-            s = init_states(Y, n_states)
+            s = self.init_states(Y, n_states)
 
         return best_s
 
@@ -174,9 +171,9 @@ class SparseJumpModel(BaseEstimator):
         Find weights given a state sequence by maximizing the interstate distance
         '''
         
-        BCSS = get_BCSS(Y, states)
-        delta = binary_search(BCSS, max_features)
-        w = calc_new_feature_weights(BCSS, delta)
+        BCSS = self.get_BCSS(Y, states)
+        delta = self.binary_search(BCSS, max_features)
+        w = self.calc_new_feature_weights(BCSS, delta)
 
         return w
 
@@ -208,7 +205,7 @@ class SparseJumpModel(BaseEstimator):
         lam1 = 0
         lam2 = abs(objective).max() - 1e-5
         for iter in range(max_iter):
-            su = soft_threshold(objective, (lam1 + lam2) / 2)
+            su = self.soft_threshold(objective, (lam1 + lam2) / 2)
             if abs(su / np.linalg.norm(su)).sum() < norm_constraint:
                 lam2 = (lam1 + lam2) / 2
             else:
@@ -224,7 +221,7 @@ class SparseJumpModel(BaseEstimator):
         Calculate feature weights using soft thresholding
         '''
         
-        soft = soft_threshold(objective, delta)
+        soft = self.soft_threshold(objective, delta)
         w = soft / np.linalg.norm(soft)
 
         return w
@@ -271,3 +268,6 @@ class SparseJumpModel(BaseEstimator):
         else:
             # If only one label is predicted, return a very low score
             return -1  # Or some other low value
+        
+if __name__ == '__main__':
+    model = SparseJumpModel()
